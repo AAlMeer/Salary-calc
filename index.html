@@ -119,7 +119,7 @@ tr:hover {
       <label>Married</label><br>
       <select id="married">
         <option value="true">Yes</option>
-        <option value="false">no</option>
+        <option value="false">No</option>
       </select>
     </div>
 
@@ -147,7 +147,7 @@ tr:hover {
         <th>Grade</th>
         <th>Base</th>
         <th>Gross</th>
-        <th>Net Take Home Monthly Salary (calculated at the end of given year)</th>
+        <th>Net Take Home Monthly Salary</th>
         <th>Yearly Cash Bonus</th>
       </tr>
     </thead>
@@ -173,7 +173,7 @@ const GRADES = {
   7:{base:270,max:573,single:1144,married:1268},
   8:{base:323,max:701,single:1309,married:1439},
   9:{base:389,max:856,single:1442,married:1578},
-  10:{base:434,max:952,single:1530,married:1666},
+  10:{base:434,max:952,single:1480,married:1616},
   11:{base:504,max:1093,single:1641,married:1772},
   12:{base:620,max:1320,single:1835,married:1973},
   13:{base:829,max:1738,single:2118,married:2476},
@@ -187,7 +187,7 @@ const GRADES = {
 };
 
 const ANNUAL = 0.07;
-const RET = 0.15;
+const RET = 0.14525;
 
 // =======================
 // LOGIC
@@ -244,6 +244,34 @@ function simulate(start, years, married, wait15, wait17){
 
   let out = [];
 
+  // =======================
+  // YEAR 0
+  // =======================
+
+  let allowance0 = allow(grade, married);
+  let gross0 = base + allowance0;
+
+  let net0 = gross0 > 2500
+    ? gross0 - 425
+    : gross0 * (1 - RET);
+
+  let bonus0 = base * 1.5;
+
+  out.push(`
+    <tr>
+      <td>0</td>
+      <td>${grade}</td>
+      <td>${base.toFixed(2)}</td>
+      <td>${gross0.toFixed(2)}</td>
+      <td>${net0.toFixed(2)}</td>
+      <td>${bonus0.toFixed(2)}</td>
+    </tr>
+  `);
+
+  // =======================
+  // YEARS 1+
+  // =======================
+
   for(let y=1;y<=years;y++){
 
     base *= (1+ANNUAL);
@@ -266,7 +294,9 @@ function simulate(start, years, married, wait15, wait17){
     let allowance = allow(grade, married);
     let gross = base + allowance;
 
-    let net = gross > 2500 ? gross - 425 : gross * (1-RET);
+    let net = gross > 2500
+      ? gross - 425
+      : gross * (1 - RET);
 
     let bonus = base * 1.5;
 
