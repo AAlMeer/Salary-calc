@@ -14,7 +14,7 @@ body {
 }
 
 .container {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 30px auto;
   padding: 20px;
 }
@@ -105,6 +105,7 @@ tr:hover {
   <h2>Salary Simulator</h2>
 
   <div class="row">
+
     <div>
       <label>Start Grade</label><br>
       <input type="number" id="grade" min="1" max="20" value="11">
@@ -136,6 +137,7 @@ tr:hover {
     <div style="align-self:end;">
       <button onclick="runSimulation()">Run Simulation</button>
     </div>
+
   </div>
 </div>
 
@@ -151,7 +153,9 @@ tr:hover {
         <th>Yearly Cash Bonus</th>
       </tr>
     </thead>
+
     <tbody id="tableBody"></tbody>
+
   </table>
 </div>
 
@@ -187,10 +191,10 @@ const GRADES = {
 };
 
 const ANNUAL = 0.07;
-const RET = 0.14525;
+const RET = 0.145;
 
 // =======================
-// LOGIC
+// HELPERS
 // =======================
 
 function cap(g,b){
@@ -201,6 +205,10 @@ function allow(g,married){
   const r = GRADES[g];
   return (married ? r.married : r.single) - r.base;
 }
+
+// =======================
+// PROMOTION EVENTS
+// =======================
 
 function buildEvents(start, wait15, wait17){
 
@@ -233,6 +241,10 @@ function buildEvents(start, wait15, wait17){
 
   return events;
 }
+
+// =======================
+// SIMULATION
+// =======================
 
 function simulate(start, years, married, wait15, wait17){
 
@@ -272,19 +284,29 @@ function simulate(start, years, married, wait15, wait17){
   // YEARS 1+
   // =======================
 
-  for(let y=1;y<=years;y++){
+  for(let y=1; y<=years; y++){
 
-    base *= (1+ANNUAL);
+    // annual raise
+    base *= (1 + ANNUAL);
+
+    // cap at max base
     base = cap(grade, base);
 
+    // promotions
     while(i < events.length && events[i][0] <= y){
 
       let [,from,to] = events[i];
 
       if(grade === from){
-        let carry = base - GRADES[from].base;
-        base = GRADES[to].base + carry;
+
         grade = to;
+
+        // NEW RULE:
+        // reset to new grade base
+        // UNLESS current base is already higher
+
+        base = Math.max(base, GRADES[to].base);
+
         base = cap(grade, base);
       }
 
@@ -292,10 +314,11 @@ function simulate(start, years, married, wait15, wait17){
     }
 
     let allowance = allow(grade, married);
+
     let gross = base + allowance;
 
     let net = gross > 2500
-      ? gross - 425
+      ? gross - 362.5
       : gross * (1 - RET);
 
     let bonus = base * 1.5;
@@ -315,13 +338,23 @@ function simulate(start, years, married, wait15, wait17){
   document.getElementById("tableBody").innerHTML = out.join("");
 }
 
+// =======================
+// UI
+// =======================
+
 function runSimulation(){
 
   let start = +document.getElementById("grade").value;
   let years = +document.getElementById("years").value;
-  let married = document.getElementById("married").value === "true";
-  let wait15 = +document.getElementById("wait15").value;
-  let wait17 = +document.getElementById("wait17").value;
+
+  let married =
+    document.getElementById("married").value === "true";
+
+  let wait15 =
+    +document.getElementById("wait15").value;
+
+  let wait17 =
+    +document.getElementById("wait17").value;
 
   simulate(start, years, married, wait15, wait17);
 }
