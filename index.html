@@ -27,9 +27,7 @@ body {
   margin-bottom: 20px;
 }
 
-h2 {
-  margin-top: 0;
-}
+h2 { margin-top: 0; }
 
 .row {
   display: flex;
@@ -58,41 +56,33 @@ button {
   color: white;
   font-weight: bold;
   cursor: pointer;
-  transition: 0.2s;
 }
 
 button:hover {
   background: #1d4ed8;
 }
 
-/* TABLE */
 table {
   width: 100%;
   border-collapse: collapse;
-  overflow: hidden;
   border-radius: 10px;
+  overflow: hidden;
 }
 
 th {
   background: #111827;
   color: white;
   padding: 10px;
-  font-size: 14px;
 }
 
 td {
   padding: 10px;
-  border-bottom: 1px solid #eee;
   text-align: center;
-  font-size: 14px;
+  border-bottom: 1px solid #eee;
 }
 
 tr:nth-child(even) {
   background: #f9fafb;
-}
-
-tr:hover {
-  background: #eef2ff;
 }
 </style>
 </head>
@@ -125,13 +115,21 @@ tr:hover {
     </div>
 
     <div>
+      <label>Housing Allowance?</label><br>
+      <select id="housing">
+        <option value="true">Eligible</option>
+        <option value="false">Not Eligible</option>
+      </select>
+    </div>
+
+    <div>
       <label>Wait 15 → 16</label><br>
       <input type="number" id="wait15" value="5" min="0.5" step="0.5">
     </div>
 
     <div>
       <label>Wait 17 → 18</label><br>
-      <input type="number" id="wait17" value="7" min="0.5" step="0.5">
+      <input type="number" id="wait17" value="10" min="0.5" step="0.5">
     </div>
 
     <div style="align-self:end;">
@@ -153,9 +151,7 @@ tr:hover {
         <th>Yearly Cash Bonus</th>
       </tr>
     </thead>
-
     <tbody id="tableBody"></tbody>
-
   </table>
 </div>
 
@@ -177,7 +173,7 @@ const GRADES = {
   7:{base:270,max:573,single:1144,married:1268},
   8:{base:323,max:701,single:1309,married:1439},
   9:{base:389,max:856,single:1442,married:1578},
-  10:{base:434,max:952,single:1480,married:1616},
+  10:{base:444,max:952,single:1490,married:1616},
   11:{base:504,max:1093,single:1641,married:1772},
   12:{base:620,max:1320,single:1835,married:1973},
   13:{base:829,max:1738,single:2118,married:2476},
@@ -191,7 +187,7 @@ const GRADES = {
 };
 
 const ANNUAL = 0.07;
-const RET = 0.145;
+const RET = 0.1418651006;
 
 // =======================
 // HELPERS
@@ -206,8 +202,24 @@ function allow(g,married){
   return (married ? r.married : r.single) - r.base;
 }
 
+// ONLY apply housing deduction for married + NOT eligible
+function adjustAllowance(g, allowance, married, eligible){
+
+  if (married && eligible) {
+    return allowance;
+  }
+
+  if (married && !eligible) {
+    if (g >= 13 && g <= 15) allowance -= 230;
+    else if (g >= 16 && g <= 17) allowance -= 260;
+    else if (g >= 18 && g <= 19) allowance -= 310;
+  }
+
+  return allowance;
+}
+
 // =======================
-// PROMOTION EVENTS
+// EVENTS
 // =======================
 
 function buildEvents(start, wait15, wait17){
@@ -246,7 +258,7 @@ function buildEvents(start, wait15, wait17){
 // SIMULATION
 // =======================
 
-function simulate(start, years, married, wait15, wait17){
+function simulate(start, years, married, wait15, wait17, housingEligible){
 
   let grade = start;
   let base = GRADES[start].base;
@@ -256,15 +268,19 @@ function simulate(start, years, married, wait15, wait17){
 
   let out = [];
 
-  // =======================
   // YEAR 0
-  // =======================
 
-  let allowance0 = allow(grade, married);
+  let allowance0 = adjustAllowance(
+    grade,
+    allow(grade, married),
+    married,
+    housingEligible
+  );
+
   let gross0 = base + allowance0;
 
   let net0 = gross0 > 2500
-    ? gross0 - 425
+    ? gross0 - 360
     : gross0 * (1 - RET);
 
   let bonus0 = base * 1.5;
@@ -280,45 +296,37 @@ function simulate(start, years, married, wait15, wait17){
     </tr>
   `);
 
-  // =======================
   // YEARS 1+
-  // =======================
 
   for(let y=1; y<=years; y++){
 
-    // annual raise
     base *= (1 + ANNUAL);
-
-    // cap at max base
     base = cap(grade, base);
 
-    // promotions
     while(i < events.length && events[i][0] <= y){
 
       let [,from,to] = events[i];
 
       if(grade === from){
-
         grade = to;
-
-        // NEW RULE:
-        // reset to new grade base
-        // UNLESS current base is already higher
-
         base = Math.max(base, GRADES[to].base);
-
         base = cap(grade, base);
       }
 
       i++;
     }
 
-    let allowance = allow(grade, married);
+    let allowance = adjustAllowance(
+      grade,
+      allow(grade, married),
+      married,
+      housingEligible
+    );
 
     let gross = base + allowance;
 
     let net = gross > 2500
-      ? gross - 362.5
+      ? gross - 360
       : gross * (1 - RET);
 
     let bonus = base * 1.5;
@@ -350,13 +358,16 @@ function runSimulation(){
   let married =
     document.getElementById("married").value === "true";
 
+  let housingEligible =
+    document.getElementById("housing").value === "true";
+
   let wait15 =
     +document.getElementById("wait15").value;
 
   let wait17 =
     +document.getElementById("wait17").value;
 
-  simulate(start, years, married, wait15, wait17);
+  simulate(start, years, married, wait15, wait17, housingEligible);
 }
 
 </script>
