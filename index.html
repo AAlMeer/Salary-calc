@@ -129,6 +129,16 @@ tr:hover {
         <option value="false">Not Eligible</option>
       </select>
     </div>
+    <div>
+  <label>Annual Increase</label><br>
+  <select id="annual">
+    <option value="0.07">7%</option>
+    <option value="0.075">7.5%</option>
+    <option value="0.08">8%</option>
+    <option value="0.085">8.5%</option>
+    <option value="0.09">9%</option>
+  </select>
+</div>
 
     <div>
       <label>Wait 15 → 16</label><br>
@@ -196,7 +206,7 @@ const GRADES = {
   20:{base:2723,max:5338,single:4647,married:4975}
 };
 
-const ANNUAL = 0.07;
+//const ANNUAL = 0.07;
 const RET = 0.1418651006;
 
 // =======================
@@ -273,7 +283,7 @@ function buildEvents(start, wait15, wait17){
 // SIMULATION
 // =======================
 
-function simulate(start, years, married, wait15, wait17, housingEligible){
+function simulate(start, years, married, wait15, wait17, housingEligible, annual){
 
   let grade = start;
   let base = GRADES[start].base;
@@ -320,7 +330,7 @@ function simulate(start, years, married, wait15, wait17, housingEligible){
   for(let y = 1; y <= years; y++){
 
     // proposed annual increase
-    let nextBase = base * (1 + ANNUAL);
+    let nextBase = base * (1 + annual);
 
     // overflow beyond grade cap
     let overflow =
@@ -390,6 +400,9 @@ function simulate(start, years, married, wait15, wait17, housingEligible){
 
 function runSimulation(){
 
+  let annual =
+    +document.getElementById("annual").value;
+
   let start =
     +document.getElementById("grade").value;
 
@@ -414,7 +427,8 @@ function runSimulation(){
     married,
     wait15,
     wait17,
-    housingEligible
+    housingEligible,
+    annual
   );
 }
 
